@@ -31,6 +31,8 @@ body{
 canvas{display:block;touch-action:manipulation}
 #hud{position:absolute;top:8px;left:10px;display:flex;gap:6px;pointer-events:none}
 .chip{background:rgba(255,250,242,.92);border:2px solid var(--ink);border-radius:4px;padding:2px 7px;font-size:13px;font-weight:700;color:var(--ink);box-shadow:0 2px 0 var(--ink)}
+#reset{position:absolute;top:8px;right:52px;height:30px;border:2px solid var(--ink);border-radius:4px;background:rgba(255,250,242,.92);font-family:inherit;font-size:13px;font-weight:800;color:var(--ink);line-height:1;box-shadow:0 2px 0 var(--ink);padding:0 8px}
+#reset.armed{background:#e2607a;color:#fff}
 #mute{position:absolute;top:8px;right:10px;width:34px;height:30px;border:2px solid var(--ink);border-radius:4px;background:rgba(255,250,242,.92);font-size:16px;line-height:1;box-shadow:0 2px 0 var(--ink);padding:0}
 #toast{position:absolute;left:50%;top:44px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:14px;font-weight:700;padding:6px 12px;border-radius:4px;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
 #toast.on{opacity:1}
@@ -56,6 +58,7 @@ canvas{display:block;touch-action:manipulation}
 <div id="stage">
   <canvas id="cv" aria-label="Fish tank game"></canvas>
   <div id="hud"><span class="chip" id="cFish">🐟 0</span><span class="chip" id="cLily">🌼 0</span></div>
+  <button id="reset" aria-label="Reset the tank">↺ 重置</button>
   <button id="mute" aria-label="Sound on or off">🔊</button>
   <div id="toast"></div>
 </div>
@@ -395,6 +398,15 @@ let toastT=0; function toast(m){const t=$('toast');t.textContent=m;t.classList.a
 function bind(id,fn){const el=$(id); el.addEventListener('pointerdown',e=>{e.preventDefault();audio();el.classList.add('press');fn()});
   ['pointerup','pointercancel','pointerleave'].forEach(ev=>el.addEventListener(ev,()=>el.classList.remove('press')));}
 bind('bFish',addFish); bind('bFood',feed); bind('bLily',addLily);
+// reset needs a second tap within 2.5s, so a stray tap can't wipe the tank
+let resetArm=0;
+$('reset').addEventListener('pointerdown',e=>{e.preventDefault();audio();const el=$('reset');
+  if(!resetArm){el.classList.add('armed');el.textContent='再按一次';toast('再按一次重置 Tap again to reset');
+    resetArm=setTimeout(()=>{resetArm=0;el.classList.remove('armed');el.textContent='↺ 重置'},2500);return}
+  clearTimeout(resetArm);resetArm=0;el.classList.remove('armed');el.textContent='↺ 重置';
+  fish=[0,1,2,3,0,4,2,1].map(v=>newFish(v));lilies=[];food.length=0;hearts.length=0;
+  save();hud();sfx('plop');toast('重置好了 Tank reset!');
+});
 $('mute').addEventListener('pointerdown',e=>{e.preventDefault();muted=!muted;$('mute').textContent=muted?'🔇':'🔊';try{speechSynthesis.cancel()}catch(_){}});
 cv.addEventListener('pointerdown',e=>{
   audio();
